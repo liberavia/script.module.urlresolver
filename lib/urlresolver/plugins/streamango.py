@@ -18,35 +18,16 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-
-import re
 from lib import helpers
-from urlresolver import common
 from urlresolver.resolver import UrlResolver, ResolverError
 
-
-class VideoRevResolver(UrlResolver):
-    name = "videorev"
-    domains = ['videorev.cc']
-    pattern = '(?://|\.)(videorev\.cc)/([a-zA-Z0-9]+)\.html'
-
-    def __init__(self):
-        self.net = common.Net()
-
+class StreamangoResolver(UrlResolver):
+    name = "streamango"
+    domains = ['streamango.com']
+    pattern = '(?://|\.)(streamango\.com)/(?:f/|embed/)?([0-9a-zA-Z]+)'
+    
     def get_media_url(self, host, media_id):
-        web_url = self.get_url(host, media_id)
-        headers = {'User-Agent': common.FF_USER_AGENT}
-        response = self.net.http_GET(web_url, headers=headers)
-        html = response.content
-
-        if html:
-            smil_id = re.search('([a-zA-Z0-9]+)(?=\|smil)', html).groups()[0]
-            smil_url = 'http://%s/%s.smil' % (host, smil_id)
-            smil = self.net.http_GET(smil_url, headers=headers).content
-            sources = helpers.parse_smil_source_list(smil)
-            return helpers.pick_source(sources) + helpers.append_headers(headers)
-
-        raise ResolverError('No playable video found.')
+        return helpers.get_media_url(self.get_url(host, media_id), patterns=['src:"(?P<url>[^"]+)"[^}]+height:(?P<label>\d+)'])
 
     def get_url(self, host, media_id):
-        return self._default_get_url(host, media_id, 'http://{host}/{media_id}.html')
+        return self._default_get_url(host, media_id, 'http://{host}/embed/{media_id}')

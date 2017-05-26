@@ -1,6 +1,9 @@
-'''
-    urlresolver Kodi Addon
-    Copyright (C) 2016 Gujal
+"""
+    OVERALL CREDIT TO:
+        t0mm0, Eldorado, VOINAGE, BSTRDMKR, tknorris, smokdpi, TheHighway
+
+    urlresolver XBMC Addon
+    Copyright (C) 2011 t0mm0
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -14,10 +17,13 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+"""
 from __generic_resolver__ import GenericResolver
 
-class LetwatchResolver(GenericResolver):
-    name = "letwatch"
-    domains = ['letwatch.us', 'letwatch.to', 'vidshare.us']
-    pattern = '(?://|\.)(letwatch\.(?:us|to)|vidshare\.us)/(?:embed-)?([0-9a-zA-Z]+)'
+class EnterVideoResolver(GenericResolver):
+    name = "entervideo"
+    domains = ['entervideo.net']
+    pattern = '(?://|\.)(entervideo\.net)/(?:watch/)?([0-9a-zA-Z]+)'
+
+    def get_url(self, host, media_id):
+        return self._default_get_url(host, media_id, template='http://entervideo.net/watch/{media_id}')

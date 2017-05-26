@@ -1,6 +1,5 @@
 """
-    urlresolver Kodi Addon
-    Copyright (C) 2016 Gujal
+    Copyright (C) 2017 tknorris
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -15,32 +14,32 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-
+import re
 from lib import helpers
 from urlresolver import common
 from urlresolver.resolver import UrlResolver, ResolverError
 
-
-class PlayUResolver(UrlResolver):
-    name = "playu"
-    domains = ["playu.net", "playu.me"]
-    pattern = '(?://|\.)(playu\.(?:net|me))/(?:embed-)?([0-9a-zA-Z]+)'
+class TheVidResolver(UrlResolver):
+    name = "TheVid"
+    domains = ["thevid.net"]
+    pattern = '(?://|\.)(thevid\.net)/(?:video|e|v)/([A-Za-z0-9]+)'
 
     def __init__(self):
         self.net = common.Net()
+        self.user_agent = common.IE_USER_AGENT
+        self.headers = {'User-Agent': self.user_agent}
 
     def get_media_url(self, host, media_id):
         web_url = self.get_url(host, media_id)
-        headers = {'User-Agent': common.FF_USER_AGENT}
-        response = self.net.http_GET(web_url, headers=headers)
-        html = response.content
-        headers['Cookie'] = response.get_headers(as_dict=True).get('Set-Cookie', '')
-        sources = helpers.scrape_sources(html, result_blacklist=['dl', '.mp4'])  # mp4 fails
-        source = helpers.pick_source(sources)
-        if '.smil' in source:
-            smil = self.net.http_GET(source, headers=headers).content
-            sources = helpers.parse_smil_source_list(smil)
-            return helpers.pick_source(sources) + helpers.append_headers(headers)
+        self.headers['Referer'] = web_url
+        html = self.net.http_GET(web_url, headers=self.headers).content
+        html += helpers.get_packed_data(html)
+        match = re.search('vurl_\d+="([^"]+)', html)
+        if match:
+            self.headers.update({'Referer': web_url})
+            return match.group(1) + helpers.append_headers(self.headers)
+        else:
+            raise ResolverError('File not found')
 
     def get_url(self, host, media_id):
-        return 'http://playu.me/embed-%s.html' % media_id
+        return self._default_get_url(host, media_id, template='http://{host}/e/{media_id}/')
